@@ -1,0 +1,8 @@
+[package]
+name = "client"
+version = "0.1.0"
+authors = ["m-mueller678"]
+
+[dependencies]
+serde = "0.8.22"
+protocol = {path = "../protocol"}

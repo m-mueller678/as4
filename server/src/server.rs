@@ -1,7 +1,6 @@
 use protocol::*;
 use mio::tcp::{TcpStream, TcpListener};
 use mio::*;
-use serde_json::Result;
 use std::collections::hash_map::{HashMap, Entry};
 use rand::{thread_rng, Rng};
 use std::rc::Rc;

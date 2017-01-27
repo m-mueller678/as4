@@ -1,10 +1,15 @@
+extern crate serde;
+extern crate serde_json;
+#[macro_use] extern crate serde_derive;
+
 use std::io::{Write, Read, ErrorKind};
 use std::cmp::Ordering;
-use serde_json::*;
-use serde::{Serialize, Deserialize};
 use std::str;
 use std::fmt::Debug;
+use serde_json::*;
+use serde::{Serialize, Deserialize};
 
+pub type Result<T>=serde_json::Result<T>;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub enum ServerMessage {
