@@ -1,9 +1,11 @@
 extern crate protocol;
 
-use protocol::*;
-use std::net::TcpStream;
+mod session;
+
+use session::Session;
+use std::env::args;
 
 fn main() {
-    let stream=TcpStream::connect("127.0.0.1:12345").unwrap();
-    let stream=BufStream::new(stream);
+    let mut session=Session::new(&args().nth(1).unwrap().as_str()).unwrap();
+    println!("{:?}",session.create());
 }
