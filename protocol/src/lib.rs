@@ -21,9 +21,24 @@ pub enum ServerMessage {
     Created(u32),
     JoinFail,
 
-    Start,
+    Start(StartData),
     TurnResult(i8),
     EndOfGame,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+pub struct StartData{
+    pub number_turns:u32,
+    pub total_points:u32,
+}
+
+impl StartData{
+    pub fn new(turns:u32,points:u32)->Self{
+        StartData{
+            number_turns:turns,
+            total_points:points,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]

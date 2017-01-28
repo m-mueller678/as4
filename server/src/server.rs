@@ -237,8 +237,9 @@ impl Server {
     }
     fn start_game(&mut self, joined: PlayerId, created: PlayerId) -> bool {
         assert!(created != joined);
-        if self.streams[created].as_mut().unwrap().send(&ServerMessage::Start).is_ok() {
-            if self.streams[joined].as_mut().unwrap().send(&ServerMessage::Start).is_ok() {
+        let start_data=StartData::new(7,700);
+        if self.streams[created].as_mut().unwrap().send(&ServerMessage::Start(start_data.clone())).is_ok() {
+            if self.streams[joined].as_mut().unwrap().send(&ServerMessage::Start(start_data)).is_ok() {
                 let game = Rc::new(RefCell::new(Game::new()));
                 self.players[joined] = PlayerState::Playing((created, game.clone()));
                 self.players[created] = PlayerState::Playing((joined, game));
