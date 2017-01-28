@@ -10,6 +10,7 @@ use serde_json::*;
 use serde::{Serialize, Deserialize};
 
 pub type Result<T>=serde_json::Result<T>;
+pub type Error=serde_json::Error;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub enum ServerMessage {
@@ -42,6 +43,11 @@ pub fn ord_to_i8(o: Ordering) -> i8 {
     }
 }
 
+pub fn protocol_error()->serde_json::Error{
+    use serde::de::Error;
+    serde_json::Error::custom("protocol error")
+}
+
 pub fn i8_to_ord(o: i8) -> Option<Ordering> {
     match o {
         - 1 => Some(Ordering::Less),
@@ -69,7 +75,7 @@ impl<Stream: Write + Read> BufStream<Stream> {
     pub fn send<T: Serialize + Debug>(&mut self, msg: &T) -> Result<()> {
         to_writer(&mut self.stream, msg)?;
         if let Err(e) = self.stream.write_all(&[0]) {
-            return Err(Error::Io(e));
+            return Err(serde_json::Error::Io(e));
         }
         Ok(())
     }
@@ -87,7 +93,7 @@ impl<Stream: Write + Read> BufStream<Stream> {
                 if e.kind() == ErrorKind::WouldBlock {
                     self.read_from_buf()
                 } else {
-                    Some(Err(Error::Io(e)))
+                    Some(Err(e.into()))
                 }
             }
         }
