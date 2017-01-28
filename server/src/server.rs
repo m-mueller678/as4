@@ -90,7 +90,7 @@ impl Server {
                 open_games: Default::default(),
                 listener: listener.unwrap(),
             };
-            s.poll.register(&s.listener, Token(SERVER_MAX_CONNECTIONS), Ready::readable(), PollOpt::edge()).unwrap();
+            s.poll.register(&s.listener, Token(SERVER_MAX_CONNECTIONS), Ready::readable()|Ready::hup()|Ready::error(), PollOpt::edge()).unwrap();
             s
         } else {
             panic!("can not open listener on {:?}", address)
@@ -120,7 +120,7 @@ impl Server {
                             None
                         };
                         if let Some(index) = index {
-                            if self.poll.register(self.streams[index].as_ref().unwrap().raw(), Token(index), Ready::readable(), PollOpt::edge()).is_err() {
+                            if self.poll.register(self.streams[index].as_ref().unwrap().raw(), Token(index), Ready::readable()|Ready::hup()|Ready::error(), PollOpt::edge()).is_err() {
                                 self.remove(index);
                                 error!("error registering stream {:?}", address);
                             }
