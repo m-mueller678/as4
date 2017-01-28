@@ -26,7 +26,7 @@ pub fn new_session<A: ToSocketAddrs>(address: &A) -> std::io::Result<NewSession>
     let stream = TcpStream::connect(address)?;
     stream.set_nodelay(true)?;
     Ok(NewSession {
-        stream: BufStream::new(stream),
+        stream: BufStream::new(stream,2048),
     })
 }
 

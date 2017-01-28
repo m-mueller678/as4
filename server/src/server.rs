@@ -111,10 +111,10 @@ impl Server {
                         panic!("error polling listener");
                     } else if let Ok((stream, address)) = self.listener.accept() {
                         let index = if let Some(i) = self.streams.iter().position(Option::is_none) {
-                            self.streams[i] = Some(BufStream::new(stream));
+                            self.streams[i] = Some(BufStream::new(stream,2048));
                             Some(i)
                         } else if self.streams.len() < SERVER_MAX_CONNECTIONS {
-                            self.streams.push(Some(BufStream::new(stream)));
+                            self.streams.push(Some(BufStream::new(stream,2048)));
                             self.players.push(PlayerState::None);
                             Some(self.streams.len() - 1)
                         } else {
@@ -147,13 +147,17 @@ impl Server {
     }
     fn read_from_player(&mut self, from: PlayerId) {
         while let Some(msg) = self.receive_single(from) {
-            if let Ok(msg) = msg {
-                if !self.handle_message(from, msg) {
+            debug!("received {:?} from {}, state: {:?}", msg, from, self.players[from]);
+            match msg {
+                Ok(msg)=> {
+                    if !self.handle_message(from, msg) {
+                        self.remove(from);
+                    }
+                },
+                Err(e)=>{
+                    debug!("receive error from {}: {}",from,e);
                     self.remove(from);
                 }
-            } else {
-                debug!("receive error from {}",from);
-                self.remove(from);
             }
         }
     }
@@ -180,7 +184,6 @@ impl Server {
         }
     }
     fn handle_message(&mut self, from: PlayerId, msg: ClientMessage) -> bool {
-        debug!("received {:?} from {}, state: {:?}", msg, from, self.players[from]);
         match self.players[from].clone() {
             PlayerState::Waiting(_) => {
                 self.streams[from].as_mut().unwrap().send(&ServerMessage::ProtocolError).is_ok();

@@ -8,9 +8,10 @@ use std::str;
 use std::fmt::Debug;
 use serde_json::*;
 use serde::{Serialize, Deserialize};
+use serde::de::Error as ErrorTrait;
 
-pub type Result<T>=serde_json::Result<T>;
-pub type Error=serde_json::Error;
+pub type Result<T> = serde_json::Result<T>;
+pub type Error = serde_json::Error;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub enum ServerMessage {
@@ -27,16 +28,16 @@ pub enum ServerMessage {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
-pub struct StartData{
-    pub number_turns:u32,
-    pub total_points:u32,
+pub struct StartData {
+    pub number_turns: u32,
+    pub total_points: u32,
 }
 
-impl StartData{
-    pub fn new(turns:u32,points:u32)->Self{
-        StartData{
-            number_turns:turns,
-            total_points:points,
+impl StartData {
+    pub fn new(turns: u32, points: u32) -> Self {
+        StartData {
+            number_turns: turns,
+            total_points: points,
         }
     }
 }
@@ -58,8 +59,7 @@ pub fn ord_to_i8(o: Ordering) -> i8 {
     }
 }
 
-pub fn protocol_error()->serde_json::Error{
-    use serde::de::Error;
+pub fn protocol_error() -> serde_json::Error {
     serde_json::Error::custom("protocol error")
 }
 
@@ -80,9 +80,9 @@ pub struct BufStream<Stream: Write + Read> {
 }
 
 impl<Stream: Write + Read> BufStream<Stream> {
-    pub fn new(stream: Stream) -> Self {
+    pub fn new(stream: Stream, capacity: usize) -> Self {
         BufStream {
-            read_buf: Vec::new(),
+            read_buf: vec![0; capacity],
             len: 0,
             stream: stream,
         }
@@ -95,9 +95,6 @@ impl<Stream: Write + Read> BufStream<Stream> {
         Ok(())
     }
     pub fn receive<T: Deserialize + Debug>(&mut self) -> Option<Result<T>> {
-        if self.len + 256 > self.read_buf.len() {
-            self.read_buf.resize(self.len + 256, 0);
-        }
         let read_res = self.stream.read(&mut self.read_buf[self.len..]);
         match read_res {
             Ok(read_len) => {
@@ -120,7 +117,11 @@ impl<Stream: Write + Read> BufStream<Stream> {
             self.set_read_start(pos + 1);
             Some(ret)
         } else {
-            None
+            if self.len == self.read_buf.len() {
+                Some(Err(Error::custom("read buffer full")))
+            } else {
+                None
+            }
         }
     }
     pub fn raw(&self) -> &Stream {
@@ -148,7 +149,7 @@ mod test {
             ServerMessage::JoinFail,
             ServerMessage::TurnResult(-76),
         ];
-        let mut stream = BufStream::new(Cursor::new(Vec::<u8>::new()));
+        let mut stream = BufStream::new(Cursor::new(Vec::<u8>::new()), 2048);
         for msg in messages.iter() {
             stream.send(msg).unwrap();
         }
