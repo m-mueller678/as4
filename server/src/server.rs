@@ -64,6 +64,7 @@ impl Game {
     }
 }
 
+#[derive(Debug)]
 struct Server {
     players: Vec<PlayerState>,
     streams: Vec<Option<Stream>>,
@@ -100,6 +101,7 @@ impl Server {
         info!("server started");
         let mut events = Events::with_capacity(64);
         loop {
+            trace!("poll, state:{:?}",self);
             self.poll.poll(&mut events, None).unwrap();
             for evt in events.iter() {
                 let ready = evt.kind();
@@ -120,17 +122,21 @@ impl Server {
                             None
                         };
                         if let Some(index) = index {
-                            if self.poll.register(self.streams[index].as_ref().unwrap().raw(), Token(index), Ready::readable()|Ready::hup()|Ready::error(), PollOpt::edge()).is_err() {
-                                self.remove(index);
-                                error!("error registering stream {:?}", address);
+                            match self.poll.register(self.streams[index].as_ref().unwrap().raw(), Token(index), Ready::readable()|Ready::hup()|Ready::error(), PollOpt::edge()) {
+                                Ok(_)=>{info!("connect from {:?} as {}", address, index)}
+                                Err(e)=> {
+                                    self.remove(index);
+                                    error!("error registering stream {:?}: {:?}", address,e);
+                                }
                             }
-                            info!("connect from {:?} as {}", address, index);
                         }
                     }
                 } else {
                     if ready.is_error() {
+                        warn!("removing player {}:socket error {:?}",player,self.streams[player].as_ref().unwrap().raw().take_error().unwrap_or(None));
                         self.remove(player);
                     } else if ready.is_hup() {
+                        info!("removing player {}: hang up",player);
                         self.remove(player);
                     } else if ready.is_readable() {
                         self.read_from_player(player)
@@ -146,6 +152,7 @@ impl Server {
                     self.remove(from);
                 }
             } else {
+                debug!("receive error from {}",from);
                 self.remove(from);
             }
         }
