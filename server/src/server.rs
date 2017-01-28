@@ -133,7 +133,9 @@ impl Server {
                     }
                 } else {
                     if ready.is_error() {
-                        warn!("removing player {}:socket error {:?}",player,self.streams[player].as_ref().unwrap().raw().take_error().unwrap_or(None));
+                        if let Some(stream) = self.streams[player].as_ref() {
+                            warn!("removing player {}:socket error {:?}", player, stream.raw().take_error().unwrap_or(None));
+                        }
                         self.remove(player);
                     } else if ready.is_hup() {
                         info!("removing player {}: hang up",player);
